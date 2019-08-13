@@ -1,0 +1,135 @@
+% Relaciona Pirata con Tripulacion
+tripulante(luffy, sombreroDePaja).
+tripulante(zoro, sombreroDePaja).
+tripulante(nami, sombreroDePaja).
+tripulante(ussop, sombreroDePaja).
+tripulante(sanji, sombreroDePaja).
+tripulante(chopper, sombreroDePaja).
+tripulante(law, heart).
+tripulante(bepo, heart).
+tripulante(arlong, piratasDeArlong).
+tripulante(hatchan, piratasDeArlong).
+
+
+% Relaciona Pirata, Evento y Monto
+impactoEnRecompensa(luffy,arlongPark, 30000000).
+impactoEnRecompensa(luffy,baroqueWorks, 70000000).
+impactoEnRecompensa(luffy,eniesLobby, 200000000).
+impactoEnRecompensa(luffy,marineford, 100000000).
+impactoEnRecompensa(luffy,dressrosa, 100000000).
+
+impactoEnRecompensa(zoro, baroqueWorks, 60000000).
+impactoEnRecompensa(zoro, eniesLobby, 60000000).
+impactoEnRecompensa(zoro, dressrosa, 200000000).
+
+impactoEnRecompensa(nami, eniesLobby, 16000000).
+impactoEnRecompensa(nami, dressrosa, 50000000).
+
+impactoEnRecompensa(ussop, eniesLobby, 30000000).
+impactoEnRecompensa(ussop, dressrosa, 170000000).
+
+impactoEnRecompensa(sanji, eniesLobby, 77000000).
+impactoEnRecompensa(sanji, dressrosa, 100000000).
+
+impactoEnRecompensa(chopper, eniesLobby, 50).
+impactoEnRecompensa(chopper, dressrosa, 100).
+
+impactoEnRecompensa(law, sabaody, 200000000).
+impactoEnRecompensa(law, descorazonamientoMasivo,240000000).
+impactoEnRecompensa(law, dressrosa, 60000000).
+
+impactoEnRecompensa(bepo,sabaody,500).
+
+impactoEnRecompensa(arlong, llegadaAEastBlue,20000000).
+
+impactoEnRecompensa(hatchan, llegadaAEastBlue, 3000).
+
+peligrosa(opeope).
+peligrosa(sorusoru).
+peligrosa(Fruta):-
+	logia(Fruta,_).
+peligrosa(Fruta):-
+	zoan(Fruta,leopardo).
+
+paramecia(gomugomu).
+paramecia(barabara).
+paramecia(opeope).
+paramecia(sorusoru).
+
+zoan(hitohito, humano).
+zoan(nekoneko, leopardo).
+
+logia(mokumoku, humo).
+
+comio(luffy, gomugomu).
+comio(buggy, barabara).
+comio(law, opeope).
+comio(charlotte, sorusoru).
+comio(chopper, zoan(hitohito,humano)).
+comio(lucci,zoan(nekoneko, leopardo)).
+comio(smoker, mokumoku).
+
+
+
+seRelacionanLasTripMedianteEvento(Tripulacion1,Tripulacion2,Evento):-
+	tripulante(Tripulante1, Tripulacion1),
+	tripulante(Tripulante2, Tripulacion2),
+	impactoEnRecompensa(Tripulante1,Evento,_),
+	impactoEnRecompensa(Tripulante2,Evento,_),
+	Tripulacion1\=Tripulacion2.
+
+pirataMasDestacadoEnEvento(Pirata,Evento):-
+	impactoEnRecompensa(Pirata,Evento,_),
+	not(pirataConMayorRecompensa(_, Pirata, Evento)).
+pirataConMayorRecompensa(PirataRico,Pirata, Evento):-
+	impactoEnRecompensa(PirataRico, Evento, RecompensaMayor),
+	impactoEnRecompensa(Pirata, Evento, RecompensaMenor),
+	RecompensaMayor > RecompensaMenor.
+
+
+pasoDesapercibido(Pirata, Evento):-
+	tripulante(Pirata, Tripulacion),
+	laTripulacionParticipoDelEvento(Tripulacion,Evento),
+	not(impactoEnRecompensa(Pirata,Evento,_)).
+laTripulacionParticipoDelEvento(Tripulacion,Evento):-
+	tripulante(Tripulante, Tripulacion),
+	impactoEnRecompensa(Tripulante,Evento,_).
+
+
+
+recompensaTotalDeUnaTripulacion(Tripulacion, RecompensaTotal):-	
+	tripulante(_,Tripulacion),
+	findall(RecompensaIndividual,recompensaDeUnTripulante(_,Tripulacion, RecompensaIndividual),Lista),
+	sumlist(Lista, RecompensaTotal).
+recompensaDeUnTripulante(Tripulante,Tripulacion, Total):-
+	tripulante(Tripulante,Tripulacion),
+	findall(Recompensa, impactoEnRecompensa(Tripulante,_,Recompensa), Lista),
+	sumlist(Lista, Total).
+
+
+tripulacionTemible(Tripulacion):-
+	tripulante(_,Tripulacion),
+	forall(tripulante(Tripulante,Tripulacion),pirataPeligroso(Tripulante)).
+tripulacionTemible(Tripulacion):-
+	recompensaTotalDeUnaTripulacion(Tripulacion, RecompensaTotal),
+	RecompensaTotal>500000000.
+pirataPeligroso(Pirata):-
+	recompensaDeUnTripulante(Pirata,_,Total),
+	Total > 100000000.
+pirataPeligroso(Pirata):-
+	comio(Pirata, Fruta),
+	peligrosa(Fruta).
+
+%% 9)La base de conocimientos de las frutas, elegi hacer un predicado por fruta (paramecia, zoan y logia), para tenerlo mas organizado y saber por ejemplo las zoan en que animal te convierten.
+%% despues defini cuales eran peligrosas en el predicado "peligrosa", por que dependiendo del nombre o de la categoria de fruta puede o no ser peligrosa.
+%% Y por ultimo defini el predicado "comio" para poder hacer el ultimo punto, por que un pirata no puede nadar si comio una fruta.
+
+tripulacionDePiratasDeAsfalto(Tripulacion):-
+	tripulante(_,Tripulacion),
+	forall(tripulante(Tripulante, Tripulacion), comio(Tripulante,_)).
+
+
+
+
+
+
