@@ -1,0 +1,115 @@
+herramientasRequeridas(ordenarCuarto, [[aspiradora(100), escoba], trapeador, plumero]).
+herramientasRequeridas(limpiarTecho, [escoba, pala]).
+herramientasRequeridas(cortarPasto, [bordeadora]).
+herramientasRequeridas(limpiarBanio, [sopapa, trapeador]).
+herramientasRequeridas(encerarPisos, [lustradpesora, cera, aspiradora(300)]).
+
+buster(ray).
+buster(egon).
+buster(peter).
+buster(winston).
+
+
+tarea(ordenarCuarto).
+tarea(limpiarTecho).
+tarea(cortarPasto).
+tarea(limpiarBanio).
+tarea(encerarPisos).
+
+
+tiene(pipo,bordeadora).
+tiene(egon,aspiradora(200)).
+tiene(egon, trapeador).
+tiene(peter, trapeador).
+tiene(peter, bordeadora).
+tiene(winston, varitaDeNeutrones).
+
+tieneLaHerramienta(Integrante, Herramienta):-
+	tiene(Integrante, Herramienta).
+tieneLaHerramienta(Integrante, aspiradora(Potencia)):-
+	tiene(Integrante, aspiradora(Potencial)),
+	between(0,Potencia, Potencial).
+tieneLaHerramienta(Integrante, Reemplazables):-
+	member(Herramienta,Reemplazables),
+	tieneLaHerramienta(Integrante,Herramienta).
+
+puedeRealizarUnaTarea(Buster, Tarea):-
+	tarea(Tarea),
+	herramientasRequeridas(Tarea,_),
+	tiene(Buster, varitaDeNeutrones).
+
+puedeRealizarUnaTarea(Buster, Tarea):-
+	buster(Buster),
+	tarea(Tarea),
+	forall(laTareaRequiere(Tarea, Herramienta), tieneLaHerramienta(Buster, Herramienta)).
+
+laTareaRequiere(Tarea, Herramienta):-    %% con este predicado, usas elemento por elemento en un findall todos los elementos de una lista.
+	herramientasRequeridas(Tarea, Herramientas),
+	pertenece(Herramienta, Herramientas).
+
+pertenece(Herramienta, Herramientas):-
+	member(Herramienta, Herramientas),
+	Herramienta \= [_,_].
+pertenece(Herramienta, Reemplazables):-
+	member([Herramienta,_], Reemplazables).
+pertenece(Herramienta, Reemplazables):-
+	member([_,Herramienta], Reemplazables).
+
+
+
+
+	
+%% tareaPedida(Cliente,Tarea,MetrosCuadrados).
+%% precio(Tarea, PrecioXMetroCuadrado).
+
+tareaPedida(diegui, cortarPasto, 20).
+tareaPedida(diegui,limpiarBanio,40).
+tareaPedida(pepe, limpiarBanio, 4).
+tareaPedida(jose,cortarPasto,14).
+
+precio(limpiarBanio, 10).
+precio(cortarPasto, 5).
+
+
+costoDeOperacion(Cliente, Precio):-
+	tareaPedida(Cliente,_,_),
+	findall(Precios,precioPorTarea(Cliente,Precios),ListaDeCostos),
+	sumlist(ListaDeCostos,Precio).
+precioPorTarea(Cliente, Precio):-
+	tareaPedida(Cliente, Tarea, MetrosCuadrados),
+	precio(Tarea, PrecioXMetroCuadrado),
+	Precio is MetrosCuadrados * PrecioXMetroCuadrado.
+
+
+aceptaElPedido(Buster, Cliente):-
+	buster(Buster),
+	tareaPedida(Cliente,_,_),	
+	forall(tareaPedida(Cliente,Tarea,_),puedeRealizarUnaTarea(Buster,Tarea)),
+	estaDispuestoAHacerlo(Buster, Cliente).
+
+estaDispuestoAHacerlo(ray, Cliente):-
+	tareaPedida(Cliente,_,_),
+	findall(Tarea, tareaPedida(Cliente,Tarea,_),ListaDeTareas),
+	not(member(limpiarTechos, ListaDeTareas)).
+estaDispuestoAHacerlo(winston,Cliente):-
+	costoDeOperacion(Cliente, Precio),
+	Precio>500.
+estaDispuestoAHacerlo(egon,Cliente):-
+	tareaPedida(Cliente,_,_),
+	forall(tareaPedida(Cliente,Tarea,_), not(tareaCompleja(Tarea))).
+estaDispuestoAHacerlo(peter,_).
+
+tareaCompleja(Tarea):-
+	herramientasRequeridas(Tarea,_),
+	findall(Herramientas,laTareaRequiere(Tarea, Herramientas),ListaDeHerramientas),
+	length(ListaDeHerramientas, CantidadDeHerramientas),
+	CantidadDeHerramientas >2.
+tareaCompleja(limpiarTechos).
+
+
+	
+	
+	
+
+	
+	
