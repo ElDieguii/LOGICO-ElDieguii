@@ -1,0 +1,142 @@
+persona(nico).
+persona(lucas).
+persona(maiu).
+persona(mama).
+grupo([nico,lucas,maiu]).
+
+mensaje(['hola', ',', 'qué', 'onda', '?'], nico).
+mensaje(['todo', 'bien', 'dsp', 'hablamos'], nico).
+mensaje(['q', 'parcial', 'vamos', 'a', 'tomar', '?'], [nico, lucas, maiu]).
+mensaje(['todo', 'bn', 'dsp', 'hablamos'], [nico, lucas, maiu]).
+mensaje(['todo', 'bien', 'después', 'hablamos'], mama).
+mensaje(['¿','y','q', 'onda', 'el','parcial', '?'], nico).
+mensaje(['¿','y','qué', 'onda', 'el','parcial', '?'], lucas).
+
+abreviatura('dsp', 'después').
+abreviatura('q', 'que').
+abreviatura('q', 'qué').
+abreviatura('bn', 'bien').
+
+sonAbreviatura(UnaPalabra,OtraPalabra):-
+	abreviatura(UnaPalabra, OtraPalabra).
+sonAbreviatura(UnaPalabra,OtraPalabra):-
+	abreviatura(OtraPalabra, UnaPalabra).
+
+signo('¿').    
+signo('?').   
+signo('.').   
+signo(','). 
+
+filtro(nico, masDe(0.5)).
+filtro(nico, ignorar(['interestelar','que','hola','onda'])).
+filtro(lucas, masDe(0.7)).
+filtro(lucas, soloFormal).
+filtro(mama, ignorar(['dsp','paja'])).
+
+recibioMensaje(Persona, Mensaje):-
+	persona(Persona),
+	mensaje(Mensaje,Persona).
+recibioMensaje(Persona,Mensaje):-
+	persona(Persona),
+	mensaje(Mensaje,Grupo),
+	member(Persona,Grupo).
+
+demasiadoFormal(Mensaje):-
+	mensaje(Mensaje,_),
+	length(Mensaje, CantidadDePalabras),
+	CantidadDePalabras > 20,
+	not(tieneAbreviatura(Mensaje)).
+demasiadoFormal(Mensaje):-
+	mensaje(Mensaje,_),
+	nth1(1,Mensaje,'¿').
+	
+tieneAbreviatura(Mensaje):-
+	mensaje(Mensaje,_),
+	abreviatura(Abreviatura,_),
+	member(Abreviatura, Mensaje).
+
+esAceptable(Palabra, Persona):-
+	persona(Persona),
+	palabra(Palabra),
+	forall(filtro(Persona,Filtro),palabraPasaLosFiltrosDe(Persona,Palabra,Filtro)).
+esAceptable(Palabra, Grupo):-
+	grupo(Grupo),
+	palabra(Palabra),
+	forall(member(Persona, Grupo),esAceptable(Palabra, Persona)).
+
+palabra(Palabra):-
+	mensaje(Mensaje,_),
+	member(Palabra,Mensaje).
+
+palabraPasaLosFiltrosDe(Persona,Palabra, masDe(N)):-
+	tasaDeUsoDePalabra(Persona,Palabra,TasaDeUso),
+	TasaDeUso>N.
+tasaDeUsoDePalabra(Persona,Palabra, TasaDeUso):-
+	persona(Persona),
+	palabra(Palabra),
+	findall(Mensaje,(recibioMensaje(Persona, Mensaje),member(Palabra, Mensaje)), Apariciones),
+	length(Apariciones, CantidadDeApariciones),
+	findall(MensajeAX,(mensaje(MensajeAX,_),member(Palabra, MensajeAX)),AparicionesEnMensajes),
+	length(AparicionesEnMensajes, CantidadDeAparicionesEnMensajes),	
+	TasaDeUso is CantidadDeApariciones/CantidadDeAparicionesEnMensajes.
+
+palabraPasaLosFiltrosDe(_, Palabra, ignorar(ListaDePalabras)):-
+	palabra(Palabra),
+	not(member(Palabra,ListaDePalabras)).
+
+palabraPasaLosFiltrosDe(_,Palabra, soloFormal):-
+	palabra(Palabra),
+	mensaje(UnaPalabraFormal,_),
+	findall(PalabraFormal, demasiadoFormal(PalabraFormal), PalabrasFormales),
+	member(UnaPalabraFormal,PalabrasFormales),
+	member(Palabra, UnaPalabraFormal).
+
+dicenLoMismo(Mensaje1, Mensaje2):-
+	mensaje(Mensaje1,_),
+	mensaje(Mensaje2,_),
+	forall((ordenDeUnaPalabraEnUnMensaje(Palabra1,Mensaje1,Orden),ordenDeUnaPalabraEnUnMensaje(Palabra2, Mensaje2, Orden)),sonEquivalentes(Palabra1, Palabra2)).
+
+sonEquivalentes(Palabra1, Palabra2):-
+	Palabra1 == Palabra2.
+sonEquivalentes(Palabra1, Palabra2):-
+	sonAbreviatura(Palabra1, Palabra2).
+
+ordenDeUnaPalabraEnUnMensaje(Palabra, Mensaje, Orden):-
+	palabra(Palabra),
+	mensaje(Mensaje,_),
+	nth1(Orden, Mensaje, Palabra).
+
+fraseCelebre(Mensaje):-	
+	mensaje(Mensaje,_),
+	forall(persona(Persona),recibioElMismoMensaje(Mensaje,Persona)).
+
+recibioElMismoMensaje(Mensaje,Persona):-
+	recibioMensaje(Persona, Mensaje).
+recibioElMismoMensaje(Mensaje,Persona):-
+	dicenLoMismo(Mensaje, Equivalente),
+	recibioMensaje(Persona, Equivalente).
+
+prediccion(Mensaje,Receptor, Prediccion):-
+	length(Mensaje, LargoDelMensaje),
+	nth1(LargoDelMensaje,Mensaje,Palabra),
+	palabra(Palabra),
+	findall(Predicciones,(palabraSiguienteA(Predicciones,_,Palabra),esAceptable(Predicciones,Receptor)),ListaDePredicciones),
+	member(Prediccion, ListaDePredicciones),
+	not(fraseCelebre(Mensaje)).
+
+
+palabraSiguienteA(Prediccion, UnMensaje, Palabra):-
+	encontrarLaPalabraEnUnMensaje(Palabra, UnMensaje, Orden),
+	Orden2 is Orden + 1,
+	ordenDeUnaPalabraEnUnMensaje(Prediccion, UnMensaje, Orden2).
+
+encontrarLaPalabraEnUnMensaje(Palabra, UnMensaje, Orden):-
+	ordenDeUnaPalabraEnUnMensaje(Palabra, UnMensaje, Orden).
+
+encontrarLaPalabraEnUnMensaje(Palabra, UnMensaje, Orden):-
+	sonEquivalentes(Palabra, Equivalente),
+	ordenDeUnaPalabraEnUnMensaje(Equivalente, UnMensaje, Orden).
+	
+
+	
+	
